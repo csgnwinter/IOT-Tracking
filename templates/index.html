@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Device Location</title>
+    <style>
+        #box {
+            width: 510px;
+            height: 510px;
+            border: 1px solid black;
+            position: relative;
+            left: 500px;
+
+            top: 200px;
+        }
+
+        #marker {
+            width: 10px;
+            height: 10px;
+            background-color: green;
+            border-radius: 50%;
+            position: absolute;
+
+            left: {{y}}px;
+
+            top: {{x}}px;
+        }
+        
+        #AP1 {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+
+            left: {{APs["AP1"]['location'][0]}}px;
+
+            top: {{APs["AP1"]['location'][1]}}px;
+        }
+        
+        #AP2 {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+
+            left: {{APs["AP2"]['location'][0]}}px;
+
+            top: {{APs["AP2"]['location'][1]}}px;
+        }
+        
+        #AP3 {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+
+            left: {{APs["AP3"]['location'][0]}}px;
+
+            top: {{APs["AP3"]['location'][1]}}px;
+        }
+        
+        #AP4 {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 200%;
+            position: absolute;
+
+            left: {{APs["AP4"]['location'][0]}}px;
+
+            top: {{APs["AP4"]['location'][1]}}px;
+        }
+        
+        .ap-circle {
+        border: 3px dashed gray;
+        border-radius: 100%;
+        position: absolute;
+      }
+    </style>
+</head>
+
+<body>
+    <div id="box">
+
+        <div class="ap-circle" style="left: {{APs["AP1"]['location'][0]-circle/2}}px; top: {{APs["AP1"]['location'][1]-circle/2}}px; width: {{circle}}px; height: {{circle}}px;"></div>
+        <div class="ap-circle" style="left: {{APs["AP2"]['location'][0]-circle/2}}px; top: {{APs["AP2"]['location'][1]-circle/2}}px; width: {{circle}}px; height: {{circle}}px;"></div>
+        <div class="ap-circle" style="left: {{APs["AP3"]['location'][0]-circle/2}}px; top: {{APs["AP3"]['location'][1]-circle/2}}px; width: {{circle}}px; height: {{circle}}px;"></div>
+        <div class="ap-circle" style="left: {{APs["AP4"]['location'][0]-circle/2}}px; top: {{APs["AP4"]['location'][1]-circle/2}}px; width: {{circle}}px; height: {{circle}}px;"></div>
+
+
+        <div id="AP1"></div>
+        <div id="AP2"></div>
+        <div id="AP3"></div>
+        <div id="AP4"></div>
+        <div id="marker"></div>
+    </div>
+</body>
+
+</html>
