@@ -1,9 +1,11 @@
 import eventlet
-import json, math
+import json, math, time
 from flask import Flask, render_template
 from flask_mqtt import Mqtt
 from flask_socketio import SocketIO
+import sqlite3
 
+conn = sqlite3.connect('main.db')
 eventlet.monkey_patch()
 
 # Define the location
@@ -59,12 +61,9 @@ def triangulate(ap1, ap2, ap3, ap4):
 
 
 app = Flask(__name__)
-app.config["SECRET"] = "my secret key"
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.config["MQTT_BROKER_URL"] = "broker.emqx.io"
+app.config["MQTT_BROKER_URL"] = "172.20.10.5"
 app.config["MQTT_BROKER_PORT"] = 1883
-app.config["MQTT_USERNAME"] = ""
-app.config["MQTT_PASSWORD"] = ""
 app.config["MQTT_KEEPALIVE"] = 5
 app.config["MQTT_TLS_ENABLED"] = False
 
@@ -74,23 +73,37 @@ app.config["MY_STATE"] = {"x": int(50), "y": int(50)}
 
 mqtt = Mqtt(app)
 socketio = SocketIO(app)
+mqtt.subscribe("CSC2006")
 
 
 # Subscribe to topic on start up
-@mqtt.on_connect()
-def handle_connect(client, userdata, flags, rc):
-    mqtt.subscribe("testingtopic")
+# @mqtt.on_connect()
+# def handle_connect(client, userdata, flags, rc):
+#     print("Subscribed")
 
 
 # Handles incoming RSSI values
 @mqtt.on_message()
 def handle_mqtt_message(client, userdata, message):
+    print("RSSI Values received")
     data = dict(topic=message.topic, payload=message.payload.decode())
-    node = json.loads(data["payload"])["node"]
-    rssi = json.loads(data["payload"])["rssi"]
-    x, y = triangulate(rssi, -30, -55, -60)
+    values = json.loads(data["payload"])
+    
+    # x, y = triangulate(-30, -30, -55, -60)
+    x, y = triangulate(int(values["node0"]), int(values["node1"]), int(values["node2"]), int(values["node3"]))
+    # x, y = triangulate(values["node0], values["node1], values["node2], values["node3])
     # socketio.emit("mqtt_message", data=data)
-    print(x, y)
+    print(f"x: {x}, y: {y}")
+
+    # Insert into database
+    cursor = conn.cursor()
+    query = "INSERT INTO rssi (date, value) \
+      VALUES (?,?)"
+    params = (int(time.time()), data["payload"])
+    cursor.execute(query,params)
+    conn.commit()
+    cursor.close()
+
     socketio.emit("my-state-update", {"x": int(x), "y": int(y)})
     app.config["MY_STATE"] = {"x": int(x), "y": int(y)}
 
@@ -111,4 +124,4 @@ def index():
 
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, use_reloader=False, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8000, use_reloader=False, debug=True)
