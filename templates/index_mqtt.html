@@ -59,7 +59,7 @@
         #marker {
             width: 10px;
             height: 10px;
-            background-color: green;
+            background-color: {{color}};
             border-radius: 50%;
             position: absolute;
 
@@ -157,8 +157,11 @@
 <script>
       var socket = io();
       socket.on('my-state-update', function(data) {
+      console.log('Received data:', data);
+
         $('#marker').css('top', data.x);
         $('#marker').css('left', data.y);
+	  $('#marker').css('background-color:', data.color);
       });
     </script>
 </body>
