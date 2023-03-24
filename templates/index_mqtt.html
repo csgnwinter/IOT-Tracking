@@ -13,52 +13,54 @@
     });
 </script>
 <div id="subscribe_messages"></div>
+
 <head>
     <meta charset="UTF-8">
     <title>Device Location</title>
     <style>
         body {
-			margin: 0;
-			padding: 0;
-		}
+            margin: 0;
+            padding: 0;
+        }
 
-		.box {
-			position: relative;
-			width: 500px;
-			height: 500px;
-			border: 1px solid black;
-			margin: 50px auto 0;
-		}
+        .box {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border: 1px solid black;
+            margin: 50px auto 0;
+        }
 
-		.x-label {
-			position: absolute;
-			top: 510px;
-			font-size: 12px;
-		}
+        .x-label {
+            position: absolute;
+            top: 510px;
+            font-size: 12px;
+        }
 
-		.y-label {
-			position: absolute;
-			left: -20px;
-			font-size: 12px;
-		}
+        .y-label {
+            position: absolute;
+            left: -20px;
+            font-size: 12px;
+        }
 
-		.row {
-			position: absolute;
-			width: 100%;
-			height: 1px;
-			background-color: lightgray;
-		}
+        .row {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background-color: lightgray;
+        }
 
-		.column {
-			position: absolute;
-			height: 100%;
-			width: 1px;
-			background-color: lightgray;
-		}
+        .column {
+            position: absolute;
+            height: 100%;
+            width: 1px;
+            background-color: lightgray;
+        }
 
         #marker {
             width: 10px;
             height: 10px;
+
             background-color: {{color}};
             border-radius: 50%;
             position: absolute;
@@ -126,43 +128,44 @@
 
 <body>
     <div class="box">
-		<div class="x-label" style="left: 0px;">0</div>
-		<div class="x-label" style="left: 100px;">100</div>
-		<div class="x-label" style="left: 200px;">200</div>
-		<div class="x-label" style="left: 300px;">300</div>
-		<div class="x-label" style="left: 400px;">400</div>
-		<div class="x-label" style="left: 500px;">500</div>
-		<div class="y-label" style="top: 0px;">500</div>
-		<div class="y-label" style="top: 100px;">400</div>
-		<div class="y-label" style="top: 200px;">300</div>
-		<div class="y-label" style="top: 300px;">200</div>
-		<div class="y-label" style="top: 400px;">100</div>
-		<div class="y-label" style="top: 500px;">0</div>
-		<div class="row" style="top: 100px;"></div>
-		<div class="row" style="top: 200px;"></div>
-		<div class="row" style="top: 300px;"></div>
-		<div class="row" style="top: 400px;"></div>
-		<div class="row" style="top: 500px;"></div>
-		<div class="column" style="left: 100px;"></div>
-		<div class="column" style="left: 200px;"></div>
-		<div class="column" style="left: 300px;"></div>
-		<div class="column" style="left: 400px;"></div>
-		<div class="column" style="left: 500px;"></div>
+        <div class="x-label" style="left: 0px;">0</div>
+        <div class="x-label" style="left: 100px;">200</div>
+        <div class="x-label" style="left: 200px;">400</div>
+        <div class="x-label" style="left: 300px;">600</div>
+        <div class="x-label" style="left: 400px;">800</div>
+        <div class="x-label" style="left: 500px;">1000</div>
+        <div class="y-label" style="top: 0px; left: -30px;">1000</div>
+        <div class="y-label" style="top: 100px;">800</div>
+        <div class="y-label" style="top: 200px;">600</div>
+        <div class="y-label" style="top: 300px;">400</div>
+        <div class="y-label" style="top: 400px;">200</div>
+        <div class="y-label" style="top: 500px;">0</div>
+        <div class="row" style="top: 100px;"></div>
+        <div class="row" style="top: 200px;"></div>
+        <div class="row" style="top: 300px;"></div>
+        <div class="row" style="top: 400px;"></div>
+        <div class="row" style="top: 500px;"></div>
+        <div class="column" style="left: 100px;"></div>
+        <div class="column" style="left: 200px;"></div>
+        <div class="column" style="left: 300px;"></div>
+        <div class="column" style="left: 400px;"></div>
+        <div class="column" style="left: 500px;"></div>
         <div id="AP1"></div>
         <div id="AP2"></div>
         <div id="AP3"></div>
         <div id="AP4"></div>
-        <div id="marker"></div>	</div>
+        <div id="marker"></div>
+    </div>
 
-<script>
-      var socket = io();
-      socket.on('my-state-update', function(data) {
-      console.log('Received data:', data);
+    <script>
+        var socket = io();
+        socket.on('my-state-update', function (data) {
+            console.log('Received data:', data);
 
-        $('#marker').css('top', data.x);
-        $('#marker').css('left', data.y);
-	  $('#marker').css('background-color:', data.color);
-      });
+            $('#marker').css('top', data.x);
+            $('#marker').css('left', data.y);
+            $('#marker').css('background-color:', data.color);
+        });
     </script>
 </body>
 

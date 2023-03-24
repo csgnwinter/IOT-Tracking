@@ -2,3 +2,4 @@ flask
 flask-mqtt
 Flask-SocketIO
 eventlet
+scipy
