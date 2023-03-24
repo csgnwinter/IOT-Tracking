@@ -27,13 +27,6 @@ access_pointss = {
 }
 
 
-# Sample RSSI values
-RSSI_AP1 = -50
-RSSI_AP2 = -60
-RSSI_AP3 = -65
-RSSI_AP4 = -55
-rssi_values = [RSSI_AP1, RSSI_AP2, RSSI_AP3, RSSI_AP4]
-
 # TxPower: RSSI value at 1 meter from the transmitter
 tx_power = -30
 
