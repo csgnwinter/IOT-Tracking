@@ -76,7 +76,7 @@ def trilateration(ap_coords, rssi_values, tx_power, n=3):
         a, b, c, d = distances
 
         # Perform trilateration with AP1, AP2, AP3
-         x1, y1 = trilateration([A, B, C], [a, b, c], tx_power, n)
+        x1, y1 = trilateration([A, B, C], [a, b, c], tx_power, n)
 
         # Perform trilateration with AP1, AP3, AP4
         x2, y2 = trilateration([A, C, D], [a, c, d], tx_power, n)
