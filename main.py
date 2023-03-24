@@ -93,7 +93,7 @@ def handle_mqtt_message(client, userdata, message):
     cursor = conn.cursor()
     query = "INSERT INTO rssi (node_id, date, value) \
       VALUES (?,?,?)"
-    params = (values["node"], int(time.time()), values["value"])
+    params = (values["node"], int(time.time()), values["rssi"])
     cursor.execute(query, params)
     conn.commit()
 
