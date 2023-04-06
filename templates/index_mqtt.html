@@ -123,10 +123,19 @@
             border-radius: 100%;
             position: absolute;
         }
+
+	#last-updated {
+    	position: absolute;
+    	top: 200px;
+    	right: 200px;
+	}
+
+	
     </style>
 </head>
 
 <body>
+
     <div class="box">
         <div class="x-label" style="left: 0px;">0</div>
         <div class="x-label" style="left: 100px;">200</div>
@@ -156,8 +165,11 @@
         <div id="AP4"></div>
         <div id="marker"></div>
     </div>
+    <span id="last-updated">Waiting for update</span>
+
 
     <script>
+	  var lastUpdatedTime = 0;
         var socket = io();
         socket.on('my-state-update', function (data) {
             console.log('Received data:', data);
@@ -165,7 +177,17 @@
             $('#marker').css('top', data.x);
             $('#marker').css('left', data.y);
             $('#marker').css('background-color:', data.color);
+
+		lastUpdatedTime = new Date().getTime() / 1000;
+
         });
+
+	  // Update last updated text every second
+        setInterval(function() {
+            var currentTime = new Date().getTime() / 1000;
+            var timeDifference = currentTime - lastUpdatedTime;
+            $('#last-updated').text('Last updated: ' + timeDifference.toFixed(0) + ' seconds ago');
+        }, 1000);
     </script>
 </body>
 
