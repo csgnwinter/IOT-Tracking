@@ -184,6 +184,9 @@
 
 	  // Update last updated text every second
         setInterval(function() {
+            if (lastUpdatedTime == 0){
+                return
+            }
             var currentTime = new Date().getTime() / 1000;
             var timeDifference = currentTime - lastUpdatedTime;
             $('#last-updated').text('Last updated: ' + timeDifference.toFixed(0) + ' seconds ago');
