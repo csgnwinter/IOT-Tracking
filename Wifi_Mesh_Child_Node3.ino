@@ -11,9 +11,13 @@ Scheduler userScheduler; // to control your personal task
 painlessMesh mesh;
 bool wifiScanRunning = false;
 //Target SSID
-const char* targetSSID = "Xiaomi_109C";
+const char* targetSSID = "Whatsup";
 int rssi = -100;
 int nodeNumber = 3;
+int retryCount = 0; // counter for number of retries
+unsigned long lastRetryTime = 0; // timestamp of last retry attempt
+const int MAX_RETRIES = 3; // maximum number of retry attempts
+
 
 //String to send to other nodes with rssi readings
 String message;
@@ -38,12 +42,32 @@ Task taskScanWifi(TASK_SECOND * 10, TASK_FOREVER, [](){
 });
 
 void sendMessage() {
-  String msg = "node3:";
-  msg += rssi;
-  mesh.sendBroadcast(msg);
-  taskSendMessage.setInterval(random(TASK_SECOND * 3, TASK_SECOND * 9));
-}
+  JSONVar jsonReadings;
+  jsonReadings["node"] = nodeNumber;
+  jsonReadings["rssi"] = rssi;
+  String msg = JSON.stringify(jsonReadings);
+  // String msg = "node1:";
+  // msg += rssi;
+  bool success =  mesh.sendBroadcast(msg);
+  if (!success) { // if message failed to send
+    if (retryCount < MAX_RETRIES) { // if we haven't exceeded the maximum number of retries
+      unsigned long currentTime = millis();
+      if (currentTime - lastRetryTime >= 5000) { // if timeout period has elapsed
+        mesh.update(); // call update() to ensure message queue is processed
+        success = mesh.sendBroadcast(msg); // attempt to resend message
+        lastRetryTime = currentTime; // update retry timestamp
+        retryCount++; // increment retry counter
+      }
+    } else { // if exceeded the maximum number of retries
+      Serial.println("Error: message transmission failed after multiple attempts");
+      retryCount = 0; // reset retry counter
+    }
+  } else { // if message was successfully sent
+    retryCount = 0; // reset retry counter
+  }
 
+  taskSendMessage.setInterval(random(TASK_SECOND * 3, TASK_SECOND * 6));
+}
 // Needed for painless library
 void receivedCallback(uint32_t from, String &msg) {
   Serial.printf("Received from %u msg= %s\n", from, msg.c_str());
@@ -90,8 +114,8 @@ void setup() {
 }
 
 void loop() {
-  
-  if (!wifiScanRunning) {
-    mesh.update();
-  }
+  mesh.update();  
+  // if (!wifiScanRunning) {
+    
+  // }
 }

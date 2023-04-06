@@ -9,11 +9,11 @@
 #define MESH_PASSWORD "12345678"
 #define MESH_PORT 5555
 #define MAX_SIZE 4
-#define MQTT_SERVER "192.168.31.113"
+#define MQTT_SERVER "broker.emqx.io"
 #define MQTT_PORT 1883
 
-#define STATION_SSID "Xiaomi_109C"
-#define STATION_PASSWORD "JIE1n31997"
+#define STATION_SSID "Whatsup"
+#define STATION_PASSWORD "12345678"
 
 #define HOSTNAME "MQTT_Bridge"
 
@@ -27,7 +27,8 @@ IPAddress mqttBroker(192,168,31,113);
 Scheduler userScheduler; // to control your personal task
 painlessMesh mesh;
 WiFiClient wifiClient;
-PubSubClient mqttClient(mqttBroker, 1883, wifiClient);
+PubSubClient mqttClient("broker.emqx.io", 1883, wifiClient);
+
 
 
 bool wifiScanRunning = false;
@@ -55,7 +56,7 @@ String message;
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 
 Task taskSendMessage(TASK_SECOND * 1, TASK_FOREVER, &sendMessage);
-Task taskScanWifi(TASK_SECOND * 15, TASK_FOREVER, [](){
+Task taskScanWifi(TASK_SECOND * 10, TASK_FOREVER, [](){
   wifiScanRunning = true;
   int numNetworks = WiFi.scanNetworks();
   for (int i = 0; i < numNetworks; i++) {
@@ -75,15 +76,13 @@ void sendMessage() {
   jsonReadings["node"] = nodeNumber;
   jsonReadings["rssi"] = rssi;
   String msg = JSON.stringify(jsonReadings);
-  // String msg = "node0:";
-  // msg += rssi;
   bool success = mesh.sendBroadcast(msg,true);
   if (!success) { // if message failed to send
     if (retryCount < MAX_RETRIES) { // if we haven't exceeded the maximum number of retries
       unsigned long currentTime = millis();
-      if (currentTime - lastRetryTime >= 5000) { // if timeout period has elapsed
+      if (currentTime - lastRetryTime >= 3000) { // if timeout period has elapsed
         mesh.update(); // call update() to ensure message queue is processed
-        success = mesh.sendBroadcast(msg); // attempt to resend message
+        success = mesh.sendBroadcast(msg,true); // attempt to resend message
         lastRetryTime = currentTime; // update retry timestamp
         retryCount++; // increment retry counter
       }
@@ -94,7 +93,7 @@ void sendMessage() {
   } else { // if message was successfully sent
     retryCount = 0; // reset retry counter
   }
-  taskSendMessage.setInterval(random(TASK_SECOND * 5, TASK_SECOND * 9));
+  taskSendMessage.setInterval(random(TASK_SECOND * 3, TASK_SECOND * 6));
 }
 
 // Needed for painless library
@@ -136,17 +135,9 @@ void setup() {
   mesh.onChangedConnections(&changedConnectionCallback);
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
   mesh.setRoot(true);
-  // This node and all other nodes should ideally know the mesh contains a root, so call this on all nodes
-  // mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
-  //   while (!mqttClient.connected()) {
-  //   if (mqttClient.connect("esp32")) {
-  //     Serial.println("MQTT connected");
-  //   } else {
-  //     Serial.print("MQTT failed with state ");
-  //     Serial.print(mqttClient.state());
-  //     delay(2000);
-  //   }
-  // }
+  mesh.setContainsRoot(true);
+  mqttClient.setServer("broker.emqx.io", 1883);
+  mqttClient.setKeepAlive(60);
   M5.Lcd.setRotation(3);
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setCursor(0, 0, 2);
@@ -160,11 +151,8 @@ void setup() {
 }
 
 void loop() {
-
-  if (!wifiScanRunning) {
-    mesh.update();
-    mqttClient.loop();
-  }
+  mesh.update();
+  mqttClient.loop();
   if(myIP != getlocalIP()){
     myIP = getlocalIP();
     Serial.println("My IP is " + myIP.toString());

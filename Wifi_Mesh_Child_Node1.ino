@@ -26,7 +26,7 @@ String message;
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 
 Task taskSendMessage(TASK_SECOND * 1, TASK_FOREVER, &sendMessage);
-Task taskScanWifi(TASK_SECOND * 15, TASK_FOREVER, [](){
+Task taskScanWifi(TASK_SECOND * 10, TASK_FOREVER, [](){
   wifiScanRunning = true;
   int numNetworks = WiFi.scanNetworks();
   for (int i = 0; i < numNetworks; i++) {
@@ -66,7 +66,7 @@ void sendMessage() {
     retryCount = 0; // reset retry counter
   }
 
-  taskSendMessage.setInterval(random(TASK_SECOND * 5, TASK_SECOND * 9));
+  taskSendMessage.setInterval(random(TASK_SECOND * 3, TASK_SECOND * 6));
 }
 
 // Needed for painless library
@@ -107,7 +107,7 @@ void setup() {
   M5.Lcd.setCursor(0, 0, 2);
   M5.Lcd.print("WIFI child Start");
   M5.Lcd.setCursor(0, 40, 2);
-  M5.Lcd.print("Node 2");
+  M5.Lcd.print("Node 1");
   userScheduler.addTask(taskSendMessage);
   userScheduler.addTask(taskScanWifi);
   taskSendMessage.enable();
@@ -115,8 +115,5 @@ void setup() {
 }
 
 void loop() {
-  
-  if (!wifiScanRunning) {
-    mesh.update();
-  }
+  mesh.update();
 }
