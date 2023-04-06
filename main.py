@@ -6,6 +6,7 @@ from flask import Flask, render_template
 from flask_mqtt import Mqtt
 from flask_socketio import SocketIO
 import sqlite3
+import datetime
 
 conn = sqlite3.connect("main.db")
 eventlet.monkey_patch()
@@ -21,17 +22,21 @@ access_points = {
 # Define the location
 access_pointss = {
     0: {"x": 0, "y": 0},
-    1: {"x": 10, "y": 0},
-    2: {"x": 10, "y": 10},
-    3: {"x": 0, "y": 10},
+    1: {"x": 1, "y": 0},
+    2: {"x": 1, "y": 1},
+    3: {"x": 0, "y": 1.},
 }
 
 
 # TxPower: RSSI value at 1 meter from the transmitter
-tx_power = -30
+# Bluetooth
+# tx_power = -85
+
+# WiFi
+tx_power = -60
 
 # Path loss exponent
-n = 3
+n = 2
 
 
 app = Flask(__name__)
@@ -50,22 +55,17 @@ socketio = SocketIO(app)
 mqtt.subscribe("CSC2006")
 
 
-def residuals(xy, *args):
-    x, y = xy
-    ap_coords, distances = args
-    return [
-        math.sqrt((x - ap[0]) ** 2 + (y - ap[1]) ** 2) - d
-        for ap, d in zip(ap_coords, distances)
-    ]
-
-
 def rssi_to_distance(rssi, tx_power, n=3):
     return 10 ** ((tx_power - rssi) / (10 * n))
 
 
-def trilateration(ap_coords, rssi_values, tx_power, n=3):
+def trilateration(ap_coords, rssi_values, tx_power, n=2.5):
     # Convert RSSI values to distances
     distances = [rssi_to_distance(rssi, tx_power, n) for rssi in rssi_values]
+
+    # Compute weights based on the distances
+    weights = [1 / d for d in distances]
+    weights = [w / sum(weights) for w in weights]  # Normalize the weights
 
     # Initial guess for the receiver position (center of the room)
     initial_guess = (
@@ -73,8 +73,19 @@ def trilateration(ap_coords, rssi_values, tx_power, n=3):
         np.mean([ap[1] for ap in ap_coords]),
     )
 
-    # Perform least-squares optimization
-    result = least_squares(residuals, initial_guess, args=(ap_coords, distances))
+    # Define residuals function
+    def residuals(xy, *args):
+        x, y = xy
+        ap_coords, distances, weights = args
+        return [
+            weights[i] * (math.sqrt((x - ap_coords[i][0]) ** 2 + (y - ap_coords[i][1]) ** 2) - d)
+            for i, d in enumerate(distances)
+        ]
+
+    # Perform weighted least-squares optimization
+    result = least_squares(
+        residuals, initial_guess, args=(ap_coords, distances, weights)
+    )
 
     # Extract optimized receiver coordinates (X, Y)
     x, y = result.x
@@ -87,13 +98,18 @@ def trilateration(ap_coords, rssi_values, tx_power, n=3):
 def handle_mqtt_message(client, userdata, message):
     print("RSSI Values received")
     data = dict(topic=message.topic, payload=message.payload.decode())
-    values = json.loads(data["payload"])
+    print(data["payload"])
+    try:
+        values = json.loads(data["payload"])
+    except Exception as e:
+        print(e)
+        return
 
     # Insert into database
     cursor = conn.cursor()
     query = "INSERT INTO rssi (node_id, date, value) \
       VALUES (?,?,?)"
-    params = (values["node"], int(time.time()), values["rssi"])
+    params = (int(values["node"]), int(time.time()), int(values["rssi"]))
     cursor.execute(query, params)
     conn.commit()
 
@@ -102,16 +118,15 @@ def handle_mqtt_message(client, userdata, message):
     # 3 Points = Low Confident (Blue)
     # 4 Points = High Confident (Green)
     # Execute a SELECT statement to fetch the latest record
-    withinTimeRequirement = 2
+    # Define the time range
+    time_range = datetime.datetime.now() - datetime.timedelta(seconds=10)
+
+    # Query the database for the latest 5 seconds average RSSI value for each node
     cursor.execute(
-        """SELECT rssi.node_id, rssi.value, rssi.date
-    FROM rssi
-    JOIN (
-        SELECT node_id, MAX(date) AS max_date
-        FROM rssi
-        GROUP BY node_id
-    ) AS latest
-    ON rssi.node_id = latest.node_id AND rssi.date = latest.max_date"""
+        f"""SELECT node_id, AVG(value) as avg_rssi
+            FROM rssi
+            WHERE date >= {int(time_range.timestamp())} AND node_id IN (0, 1, 2, 3)
+            GROUP BY node_id"""
     )
 
     # Fetch the result
@@ -120,30 +135,35 @@ def handle_mqtt_message(client, userdata, message):
 
     print(result)
 
-    # Get highest / latest timestamp as upper limit
-    maxTime = max(result[0][2], result[1][2], result[2][2], result[3][2])
-
-    eligibleNodes = []
-    for i in result:
-        if maxTime - withinTimeRequirement <= i[2]:
-            eligibleNodes.append(i)
-
-    if len(eligibleNodes) < 3:
+    # Check if there are at least 3 RSSI values for each node
+    eligible_nodes = []
+    for node_id, avg_rssi in result:
+        eligible_nodes.append((node_id, avg_rssi))
+    print(eligible_nodes)
+    if len(eligible_nodes) < 3:
         print("Did not meet requirements")
         return
 
-    if len(eligibleNodes) == 3:
+    if len(eligible_nodes) == 3:
         color = "blue"
     else:
         color = "green"
 
     points = []
     nodes = []
-    for i in eligibleNodes:
-        points.append(int(i[1]))
-        nodes.append((access_pointss[i[0]]["x"], access_pointss[i[0]]["y"]))
+    for node_id, rssi in eligible_nodes:
+        points.append(rssi)
+        nodes.append((access_pointss[node_id]["x"], access_pointss[node_id]["y"]))
 
     x, y = trilateration(nodes, points, tx_power)
+    if (x < 0):
+        x = 0
+    if (y < 0):
+        y = 0
+    if (x > 1):
+        x = 1
+    if (y > 1):
+        y = 1
     print(f"x: {x}, y: {y}")
 
     if x != -1000:
@@ -151,11 +171,11 @@ def handle_mqtt_message(client, userdata, message):
 
         socketio.emit(
             "my-state-update",
-            {"x": int(x * 100 / 2), "y": int(y * 100 / 2), "color": color},
+            {"x": int(x * 100 * 5), "y": int((1-y) * 100 * 5), "color": color},
         )
         app.config["MY_STATE"] = {
-            "x": int(x * 100 / 2),
-            "y": int(y * 100 / 2),
+            "x": int(x * 100 * 5),
+            "y": int((1-y) * 100 * 5),
             "color": color,
         }
 
