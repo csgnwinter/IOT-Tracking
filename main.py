@@ -19,14 +19,18 @@ access_points = {
     "AP4": {"x": 10, "y": 500},
 }
 
+# For access point
+max_distance = 1
+
 # Define the location
 access_pointss = {
     0: {"x": 0, "y": 0},
-    1: {"x": 1, "y": 0},
-    2: {"x": 1, "y": 1},
-    3: {"x": 0, "y": 1.},
+    1: {"x": max_distance, "y": 0},
+    2: {"x": max_distance, "y": max_distance},
+    3: {"x": 0, "y": max_distance},
 }
 
+max_distance = 1
 
 # TxPower: RSSI value at 1 meter from the transmitter
 # Bluetooth
@@ -160,10 +164,10 @@ def handle_mqtt_message(client, userdata, message):
         x = 0
     if (y < 0):
         y = 0
-    if (x > 1):
-        x = 1
-    if (y > 1):
-        y = 1
+    if (x > max_distance):
+        x = max_distance
+    if (y > max_distance):
+        y = max_distance
     print(f"x: {x}, y: {y}")
 
     if x != -1000:
@@ -171,11 +175,11 @@ def handle_mqtt_message(client, userdata, message):
 
         socketio.emit(
             "my-state-update",
-            {"x": int(x * 100 * 5), "y": int((1-y) * 100 * 5), "color": color},
+            {"x": int(x * 100 * (5/max_distance)), "y": int((max_distance-y) * 100 *(5/max_distance)), "color": color},
         )
         app.config["MY_STATE"] = {
-            "x": int(x * 100 * 5),
-            "y": int((1-y) * 100 * 5),
+            "x": int(x * 100 * (5/max_distance)),
+            "y": int((max_distance-y) * 100 * (5/max_distance)),
             "color": color,
         }
 
